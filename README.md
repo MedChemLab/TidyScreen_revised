@@ -15,7 +15,7 @@ A core feature common to TidyScreen philosophy is the use of [SQL databases](htt
 ---
 #### Installation
 
-Installation of the package is performed simply by cloning this repository, after which a **key requirement** is to create a [CONDA environment](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) using the provided **CCAD.yml** file. Upon successful creation, this new environment (named: *CCAD_platform*) will contain all the required Python modules necessary to execute every single TidyScreen action.
+Installation of the package is performed simply by cloning this repository, after which a **key requirement** is to create a [CONDA environment](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html) using the provided **tidyscreen.yml** file. Upon successful creation, this new environment (named: *tidyscreen*) will contain all the required Python modules necessary to execute every single TidyScreen action.
 
 **Additional requirements not installed by CONDA**:
     
