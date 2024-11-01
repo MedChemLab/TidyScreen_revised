@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-setup(name='tidyscreeb',
+setup(name='tidyscreen',
       version='0.0.1',
       description='A package to manage data associated to drug screening campaigns',
       long_description=open('README.md').read().strip(),
@@ -12,8 +12,8 @@ setup(name='tidyscreeb',
       install_requires=[
         'pandas==2.2.1',
         'rdkit==2023.9.5',
-        'openbabel=3.1.1'
-        'sqlite=3.46.1'
+        'openbabel=3.1.1',
+        'sqlite=3.46.1',
       ],
       packages=find_packages(exclude=("utilities")),
       keywords='drug-discovery machine-learning ersilia chembl',
