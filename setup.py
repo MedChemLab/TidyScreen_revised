@@ -12,7 +12,7 @@ setup(name='tidyscreen',
       install_requires=[
         'pandas==2.2.1',
         'rdkit==2023.9.5',
-        'openbabel==3.1.1.1',
+        'openbabel',
         'pysqlite3',
       ],
       packages=find_packages(exclude=("utilities")),
