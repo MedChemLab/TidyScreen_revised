@@ -16,12 +16,12 @@ setup(name='tidyscreen',
         'pysqlite3',
       ],
       packages=find_packages(exclude=("utilities")),
-      keywords='drug-discovery machine-learning ersilia chembl',
+      keywords='drug-discovery',
       classifiers=[
           "Programming Language :: Python :: 3.10",
           "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
           "Operating System :: OS Independent",
-          "Topic :: Scientific/Engineering :: Artificial Intelligence",
+          "Topic :: virtual high-throughput screening",
       ],
       include_package_data=True
       )
