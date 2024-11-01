@@ -15,7 +15,7 @@ setup(name='tidyscreen',
         'openbabel-wheel',
         'pysqlite3',
       ],
-      packages=find_packages(exclude=("utilities")),
+      packages=find_packages(),
       keywords='drug-discovery',
       classifiers=[
           "Programming Language :: Python :: 3.10",
