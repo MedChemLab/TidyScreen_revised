@@ -5,7 +5,9 @@ import sqlite3
 import pickle
 import shutil
 import os
-import database_interactions as dbs_ints
+import sys
+#import database_interactions as dbs_ints
+from tidyscreen import database_interactions as db_ints
 
 class CreateProject:
     """
@@ -13,11 +15,15 @@ class CreateProject:
     """    
     def __init__(self):
         self.project_config()
+        self.create_proj_structure()
         self.store_project_in_database()
+        # Inform that the project was created
+        print(f"TidyScreen says: \n Project {self.project_name} created successfully")
 
     def project_config(self, name=None, path=None):
         if name == None:
             self.project_name = input("Provide the project name to be created: ")
+            self.check_project_presence()
         else:
             self.project_name = name
         if path == None:
@@ -29,7 +35,14 @@ class CreateProject:
 
         self.project_description = input("Provide a brief project description: ")
 
-        self.create_proj_structure()
+    def check_project_presence(self):
+        available_projects = list_available_projects(list_rows=0) # Do not list rows, just obtain them
+        for project in available_projects:
+            existing_project_name = project[0]
+            # Check if the new project name already exists, and in that case inform and exit
+            if self.project_name == existing_project_name:
+                print(f"TidyScreen says: \n The project: '{self.project_name}' already exists. Stopping.")
+                sys.exit()
 
     def create_proj_structure(self):
         try: 
@@ -106,14 +119,8 @@ class CreateProject:
             print(colored(f"## Error: \n '{error}' \n ocurred while creating project structure","red"))
 
     def store_project_in_database(self):
-        projects_database = get_python_lib() + "/src"
-        conn = sqlite3.connect(f'{projects_database}/projects_database.db')
-        
-        dbs_ints.ReadingOperations.connect_to_database(self,projects_database,"projects_database.db")
-        
-        self.store_project_in_table(conn)
-
-    def store_project_in_table(self,conn):
+        projects_database = get_python_lib() + "/tidyscreen/projects_database.db"
+        conn = db_ints.connect_to_database(projects_database)
         cur = conn.cursor()
         # Create the projects table only if it does not exists
         cur.execute('CREATE TABLE IF NOT EXISTS projects (name VARCHAR, path VARCHAR, description VARCHAR)')
@@ -180,10 +187,40 @@ class ProjectsManagement:
         project_path = cur.fetchall()[0][0]
         return project_path
 
+def list_available_projects(list_rows=1):
+    database_path = get_python_lib() + "/tidyscreen"
+    database_file = f'{database_path}/projects_database.db'
+    # Check if the database exists
+    if os.path.exists(database_file):
+        try: 
+            conn = db_ints.connect_to_database(database_file)
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM projects")
+            
+            rows = cursor.fetchall()
+            
+            # If the default value = 1, the rows with projects will be printed
+            if list_rows == 1:
+            
+                for row in rows:
+                    print(f'Project: ', colored(f'{row[0]}','green'), 
+                        '\n \t located at', colored(f'{row[1]}','green') )
+            
+            return rows
+
+        except Exception as error:
+            print(error)
+
+    else:
+        print("TidyScreen says: \n No project database exists. Create a new project.")
+        return []
+
+
 # This section is to test the module locally
 
 if __name__ == '__main__':
 
+    #list_available_projects()
     project = CreateProject()
     #ProjectsManagement.list_projects()
     #ProjectsManagement.delete_all_projects()
