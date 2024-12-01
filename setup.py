@@ -9,7 +9,7 @@ setup(name='tidyscreen',
       url='https://github.com/MedChemLab/TidyScreen_revised',
       license='GPLv3',
       python_requires='>=3.10',
-      package_data = {'': ['src']},
+      package_data = {'': ['tidyscreen']},
       install_requires=[
         'pandas==2.2.1',
         'rdkit==2023.9.5',
