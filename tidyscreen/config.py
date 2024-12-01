@@ -4,6 +4,8 @@ from distutils.sysconfig import get_python_lib
 import sqlite3
 import pickle
 import shutil
+import os
+import database_interactions as dbs_ints
 
 class CreateProject:
     """
@@ -31,39 +33,39 @@ class CreateProject:
 
     def create_proj_structure(self):
         try: 
-            # Define a path folder to store usable paths
+            # Define a path folder to store project relevant paths
             levels_paths_dict = {}
 
-            # Create the project level 0 folder
-            folder_level_1 = ["chemspace","docking","dynamics"]
-            level_0_folders_dict = {}
-            for folder in folder_level_1:
-                new_folder = f"{self.project_path}/{self.project_name}/{folder}"
+            # Create the project base level folder
+            project_base_level_folders = ["chemspace","docking","dynamics"]
+            project_base_level_folders_dict = {}
+            for folder in project_base_level_folders:
+                new_folder = f"{self.project_path}/{folder}"
                 Path(f"{new_folder}").mkdir(parents=True, exist_ok=False)    
-                level_0_folders_dict[folder] = new_folder
+                project_base_level_folders_dict[folder] = new_folder
             
-            # Store level_0 paths in the general path dict            
-            levels_paths_dict["level_0_paths"] = level_0_folders_dict 
+            # Store level_0 paths as a in the general path dict            
+            levels_paths_dict["project_base_paths"] = project_base_level_folders_dict 
             # Associate the path general paths dictionaty to the object
             self.project_paths = levels_paths_dict
 
             # Create the project level 1 folder for 'chemspace'
             folder_level_chemspace = ["raw_data","processed_data","misc"]
-            base_folder = self.project_paths['level_0_paths']['chemspace']
-            level_1_chemspace_dict = {}
+            base_folder = self.project_paths['project_base_paths']['chemspace']
+            level_chemspace_dict = {}
             for folder in folder_level_chemspace:
                 new_folder = f"{base_folder}/{folder}"
                 Path(f"{new_folder}").mkdir(parents=True, exist_ok=False)
-                level_1_chemspace_dict[folder] = new_folder
+                level_chemspace_dict[folder] = new_folder
            
            # Store level_1 chemspace paths in the general path dict            
-            levels_paths_dict["level_1_CS_paths"] = level_1_chemspace_dict
+            levels_paths_dict["level_1_CS_paths"] = level_chemspace_dict
             # Associate the path general paths dictionaty to the object
             self.project_paths = levels_paths_dict
 
             # Create the project level 1 folder for 'docking'
             folder_level_docking = ["docking_assays","docking_registers","params","raw_data","receptors"]
-            base_folder = self.project_paths['level_0_paths']['docking']
+            base_folder = self.project_paths['project_base_paths']['docking']
             level_1_docking_dict = {}
             for folder in folder_level_docking:
                 new_folder = f"{base_folder}/{folder}"
@@ -77,25 +79,27 @@ class CreateProject:
 
             # Create the project level 1 folder for 'dynamics'
             folder_level_dynamics = ["md_assays","md_registers","md_params"]
-            base_folder = self.project_paths['level_0_paths']['dynamics']
-            level_1_dynamics_dict = {}
+            base_folder = self.project_paths['project_base_paths']['dynamics']
+            level_dynamics_dict = {}
             for folder in folder_level_dynamics:
                 new_folder = f"{base_folder}/{folder}"
                 Path(f"{new_folder}").mkdir(parents=True, exist_ok=False)
-                level_1_dynamics_dict[folder] = new_folder
+                level_dynamics_dict[folder] = new_folder
            
            # Create a hidden 'project_vars' folder to store config files
-            new_folder = f"{self.project_path}/{self.project_name}/.project_vars"
+            new_folder = f"{self.project_path}/project_vars"
+            new_folder_hidden = f"{self.project_path}/.project_vars"
             Path(f"{new_folder}").mkdir(parents=True, exist_ok=False)
-            #os.system(f'mv {new_folder} .{new_folder}') # Make the folder hidden
+            os.system(f'mv {new_folder} {new_folder_hidden}') # Make the folder hidden
+            
 
-           # Store level_1 docking paths in the general path dict            
-            levels_paths_dict["level_1_DYN_paths"] = level_1_dynamics_dict
+           # Store level_dynamics paths in the general path dict            
+            levels_paths_dict["level_DYN_paths"] = level_dynamics_dict
             # Associate the path general paths dictionaty to the object
             self.project_paths = levels_paths_dict
 
         # Save the project paths to a pickle file
-            with open(f"{self.project_path}/{self.project_name}/.project_vars/paths.pkl","wb") as paths_file:
+            with open(f"{self.project_path}/.project_vars/paths.pkl","wb") as paths_file:
                 pickle.dump(self.project_paths, paths_file)
 
         except Exception as error:
@@ -104,6 +108,9 @@ class CreateProject:
     def store_project_in_database(self):
         projects_database = get_python_lib() + "/src"
         conn = sqlite3.connect(f'{projects_database}/projects_database.db')
+        
+        dbs_ints.ReadingOperations.connect_to_database(self,projects_database,"projects_database.db")
+        
         self.store_project_in_table(conn)
 
     def store_project_in_table(self,conn):
@@ -177,9 +184,9 @@ class ProjectsManagement:
 
 if __name__ == '__main__':
 
-    #project = CreateProject()
+    project = CreateProject()
     #ProjectsManagement.list_projects()
-    ProjectsManagement.delete_all_projects()
+    #ProjectsManagement.delete_all_projects()
     #ProjectsManagement.delete_single_project("test4")
     #ProjectsManagement.get_project_path("test4")
 
