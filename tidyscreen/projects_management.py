@@ -4,6 +4,11 @@ from termcolor import colored
 from distutils.sysconfig import get_python_lib
 import shutil
 from tidyscreen import database_interactions as db_ints
+import pickle
+import datareader
+import general_functions
+from tidyscreen import database_interactions as db_ints
+import sys
 
 def list_projects(list_rows=1):
         database_path = get_python_lib() + "/tidyscreen_dbs"
@@ -98,5 +103,90 @@ def check_main_database_presence():
     else:
         return 0 
 
+
+class ActivateProject:
+    
+    def __init__(self, project_name):
+        #print(" \n TidyScreen says: \n 'Avaliable projects in database:' \n")
+        #list_projects()
+        self.project_name = project_name
+        ActivateProject.retrieve_project_path(self)
+        ActivateProject.retrieve_project_path_variables(self)
+        
+    def retrieve_project_path(self):
+        projects_database = get_python_lib() + "/tidyscreen_dbs"
+        conn = sqlite3.connect(f'{projects_database}/projects_database.db')
+        # This will delete the project datafolder in the local machine
+        project_path = get_project_path(conn,self.project_name)
+        self.project_path = project_path
+        
+    def retrieve_project_path_variables(self):
+        with open(f"{self.project_path}/.project_vars/paths/paths.pkl", "rb") as file:
+            paths_dict = pickle.load(file)
+        file.close()
+        
+        self.paths_dict = paths_dict
+
+class ChemSpaceActions:
+    
+    def __init__(self,project):
+        self.project = project
+        
+    def process_raw_cpds_file(self,file):
+        
+        chemspace_raw_path = self.project.paths_dict['chemspace']['raw_data']
+        chemspace_processed_path = self.project.paths_dict['chemspace']['processed_data']
+        
+        # If raw file not in project, store it
+        filename = file.split('/')[-1]
+        table_name = filename.split('.')[0]
+        destination_file = chemspace_raw_path+'/'+filename
+        
+        self.project.file_to_process = destination_file
+        self.project.table_name = table_name
+
+        if os.path.isfile(destination_file):
+            print(f"The raw: '{filename}' file has already been processed")
+        else:
+            print("The raw file was copied to the raw data directory of the project")
+            general_functions.copy_file_to_dest(file,destination_file)
+            project = self.project
+            datareader.InputRawChemspaceFile(project)
+
+    def list_ligands_tables(self):
+        chemspace_db = f"{self.project.paths_dict['chemspace']['processed_data']}/chemspace.db"
+        conn = db_ints.connect_to_database(chemspace_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        print("Tables in the database:")
+        for table in tables:
+            print(table[0])
+
+        conn.close()
+
+    def generate_ligands_pdqbt_files(self,table_name):
+        chemspace_db = f"{self.project.paths_dict['chemspace']['processed_data']}/chemspace.db"
+        conn = db_ints.connect_to_database(chemspace_db)
+        pdqbt_table = table_name + "_pdqbt_files"
+
+        # Check if the corresponding .pdbqt table already exists
+        exists = db_ints.check_table_presence(conn,pdqbt_table)
+        
+        if exists == 1:
+            print(f"Table '{table_name}' has already been processed to generate .pdbqt files")
+            sys.exit()
+        
+        else:
+             print("Computing .pdbqt files")
+             db_ints.create_ligand_pdbqt_table(conn,pdqbt_table)
+
+            
 if __name__ == '__main__':
-     list_projects()
+     
+     #list_projects()
+     my_project = ActivateProject("test1")
+     my_project_CS = ChemSpaceActions(my_project)
+     #my_project_CS.process_raw_cpds_file("/home/fredy/Desktop/test_tidyscreen/files/test_smi.smi")
+     #my_project_CS.list_ligands_tables()
+     my_project_CS.generate_ligands_pdqbt_files("test_smi")

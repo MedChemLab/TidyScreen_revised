@@ -85,7 +85,6 @@ class CreateProject:
 
     def store_project_in_database(self):
         projects_database = get_python_lib() + "/tidyscreen_dbs/projects_database.db"
-        print(projects_database)
         conn = db_ints.connect_to_database(projects_database)
         cur = conn.cursor()
         # Create the projects table only if it does not exists
@@ -94,15 +93,15 @@ class CreateProject:
         cur.execute(f'INSERT INTO projects (name, path, description) values (?,?,?)', (self.project_name, self.project_path,self.project_description))
         conn.commit()
    
+        
 
 # This section is to test the module locally
 
 if __name__ == '__main__':
 
-    #list_projects()
-    project = CreateProject()
-    #ProjectsManagement.delete_all_projects()
-    #ProjectsManagement.delete_single_project("test4")
-    #ProjectsManagement.get_project_path("test4")
-
-
+    #proj_mg.list_projects()
+    #project = CreateProject()
+    #proj_mg.delete_all_projects()
+    #proj_mg.delete_single_project("test4")
+    #proj_mg.get_project_path("test4")
+    pass
