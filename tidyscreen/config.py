@@ -1,6 +1,6 @@
 from pathlib import Path
 from termcolor import colored
-from distutils.sysconfig import get_python_lib
+#from distutils.sysconfig import get_python_lib
 import sqlite3
 import pickle
 import shutil
@@ -9,12 +9,18 @@ import sys
 #import tidyscreen functions
 from tidyscreen import database_interactions as db_ints
 from tidyscreen import projects_management as proj_mg
+from tidyscreen import datareader
+from tidyscreen import general_functions
+import tidyscreen_dbs
 
 class CreateProject:
     """
     This manages the creation and configuration of a new screening project
     """    
+    
     def __init__(self):
+        
+        self.main_projects_db = sys.modules['tidyscreen_dbs'].__file__.replace('__init__.py','projects_database.db')
         self.project_config()
         self.create_proj_structure()
         self.store_project_in_database()
@@ -24,10 +30,12 @@ class CreateProject:
     def project_config(self, name=None, path=None):
         if name == None:
             self.project_name = input("Provide the project name to be created: ")
+            
             self.check_project_presence()
 
         else:
             self.project_name = name
+        
         if path == None:
             base_dir = input("Provide the projects base directory: ")
             project_path = f'{base_dir}/{self.project_name}'
@@ -41,6 +49,7 @@ class CreateProject:
         main_db_exists = proj_mg.check_main_database_presence()
         
         # If the main database exists, then check the presence
+        
         if main_db_exists == 1:
             available_projects = proj_mg.list_projects(list_rows=0)
             for project in available_projects:
@@ -84,16 +93,33 @@ class CreateProject:
             print(f"TidyScreen says: \n Error creating project: '{self.project_name}' folder structure")
 
     def store_project_in_database(self):
-        projects_database = get_python_lib() + "/tidyscreen_dbs/projects_database.db"
-        conn = db_ints.connect_to_database(projects_database)
+        conn = db_ints.connect_to_database(self.main_projects_db)
         cur = conn.cursor()
         # Create the projects table only if it does not exists
         cur.execute('CREATE TABLE IF NOT EXISTS projects (name VARCHAR, path VARCHAR, description VARCHAR)')
         # Store the project register
         cur.execute(f'INSERT INTO projects (name, path, description) values (?,?,?)', (self.project_name, self.project_path,self.project_description))
         conn.commit()
-   
+
+class MainDbConfigs:
+
+    def __init__(self):
+        self.main_projects_db = sys.modules['tidyscreen_dbs'].__file__.replace('__init__.py','projects_database.db')
         
+    def add_chem_filters_from_file(self,filters_file):
+        conn = sqlite3.connect(self.main_projects_db)
+        general_functions.input_chem_filters_to_db(conn,filters_file)
+    
+    def list_available_chem_filter(self):
+        conn = sqlite3.connect(self.main_projects_db)
+        filters_df = general_functions.retrieve_stored_filters(conn)
+        
+        for index, row in filters_df.iterrows():
+            print(f"{row['Filter_Name']}")
+        
+
+
+
 
 # This section is to test the module locally
 

@@ -13,7 +13,8 @@ class InputRawChemspaceFile:
         self.query_user_about_parsing()
         self.parse_data()
         self.store_df_in_database()
-
+        print("File succesfully stored within project database")
+        
     def print_parsing_info(self):
         # Ask for user input on how to parse the file upon showing 2 lines:
         with open (self.project.file_to_process) as input_file:
@@ -78,7 +79,6 @@ class InputRawChemspaceFile:
         
         self.parsing_options_dict = parsing_options_dict
         
-
     def parse_data(self):
         if self.parsing_options_dict["header"] == 'y':
             header_flag = 0
@@ -96,11 +96,6 @@ class InputRawChemspaceFile:
         
         # Store the dataframe in the corresponding database
         self.raw_data_df.to_sql(con=conn, name=self.project.table_name,if_exists="replace",index=None)
-        
-        
 
-if __name__ == '__main__':
-    
-    #input_file = InputCsvFile("/home/fredy/Desktop/tidyscreen/files/test_smi.smi")
-    input_file = InputRawChemspaceFile("/home/fredy/Desktop/tidyscreen/files/test_smi_no_name.smi")
+        
 

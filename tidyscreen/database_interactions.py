@@ -19,23 +19,37 @@ def check_table_presence(conn,table_name):
     else:
         return 0
 
-
-
 def create_ligand_pdbqt_table(conn,table_name):
-    sql = f"""CREATE TABLE '{table_name}' 
-            (SMILES TEXT NOT NULL, 
-            inchi_key TEXT NOT NULL, 
-            stored_file TEXT NOT NULL, 
-            blob_item BLOB NOT NULL,
-            stored_pdb_file TEXT,
-            pdb_blob_item BLOB);"""      
-        
-    conn.execute(sql)
+    try:
+        sql = f"""CREATE TABLE '{table_name}' 
+                (SMILES TEXT NOT NULL, 
+                Name TEXT NOT NULL,
+                inchi_key TEXT NOT NULL, 
+                stored_pdbqt_file TEXT NOT NULL, 
+                pdbqt_blob_item BLOB NOT NULL,
+                stored_pdb_file TEXT,
+                pdb_blob_item BLOB);"""      
+            
+        conn.execute(sql)
     
-    conn.close()
+    except sqlite3.Error as error:
+        print(error)
 
-if __name__ == '__main__':
-    pass
+def create_chemfilters_table(conn,table_name="chem_filters"):
+    try:
+        sql = f"""CREATE TABLE '{table_name}' 
+                (Filter_id INTEGER, 
+                Filter_Name TEXT NOT NULL, 
+                SMARTS TEXT NOT NULL,
+                Description TEXT NOT NULL);"""      
+            
+        conn.execute(sql)
 
-
-
+        print(f"Table: '{table_name}' has been created.")
+    except sqlite3.Error as error:
+        print(error)
+    
+def store_df_as_table_in_db(conn,df,table_name,action="replace"):
+    df.to_sql(con=conn, name=table_name,if_exists=action,index=None)
+    
+    
