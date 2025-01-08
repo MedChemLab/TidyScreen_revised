@@ -136,7 +136,7 @@ class ChemSpaceActions:
         project_db_conn = db_ints.connect_to_database(chemspace_db)
         self.project_CS_conn = project_db_conn
 
-    def process_raw_cpds_file(self,file):
+    def process_raw_cpds_file(self,file,retain_stereo=1):
         # This is the NEW CODE
         # Generate the table_name to be eventually stored in the database
         table_name = file.split('/')[-1].split('.')[0]
@@ -149,7 +149,7 @@ class ChemSpaceActions:
             if action == 'y':
                 db_ints.delete_table_from_db(self.project_CS_conn,table_name)
             else:
-                print(f"Preventing overwritting of: '{table_name} \n table. Stopping.'")
+                print(f"Preventing overwriting of: '{table_name} \n table. Stopping.'")
                 sys.exit()
         
         ## If the analysis is not stopped before, continue the data reading analysis
@@ -161,6 +161,7 @@ class ChemSpaceActions:
         # Execute the data processing
         self.project.file_to_process = destination_file
         self.project.table_name = table_name
+        self.project.retain_stereo = retain_stereo
         project = self.project
         datareader.InputRawChemspaceFile(project)
 
@@ -170,8 +171,11 @@ class ChemSpaceActions:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = cursor.fetchall()
-        print(f"Tables in database corresponding to project: '{self.project.project_name}':")
-        for table in tables:
+        
+        sorted_tables = sorted(tables, key=lambda x: x[0]) # Sort the list of tuples by the first item
+
+        print(f"Tables in database corresponding to project: '{self.project.project_name}': \n")
+        for table in sorted_tables:
             print(table[0])
 
         conn.close()

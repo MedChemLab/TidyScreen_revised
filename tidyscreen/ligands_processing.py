@@ -4,6 +4,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers, StereoEnumerationOptions
 from rdkit.Chem.Draw import MolsToGridImage, rdMolDraw2D
+from rdkit.Chem import rdmolops
 import pandas as pd
 from pandarallel import pandarallel
 import tarfile
@@ -103,8 +104,7 @@ def compute_inchi_key(smiles):
         inchi_key = Chem.MolToInchiKey(mol)
         return inchi_key
     except:
-        print(f"Error processing Inchi_key for SMILES: \n {smiles} \n")
-        return "InchiKey_error"
+        pass
 
 def compute_inchi_key_for_whole_df(df):
     pandarallel.initialize(progress_bar=False)
@@ -530,3 +530,47 @@ def depict_ligands_table(conn,table_name,output_path,max_mols_ppage):
         img = MolsToGridImage(mols=mols_item, legends=lengeds_list_chunks[index], molsPerRow=5,subImgSize=(400,250))
         img.save(f"{output_path}/{table_name}_{counter}.png")
         counter+=1
+
+
+def sanitize_smiles(smiles,retain_stereo):
+    try: 
+        repaired_smiles = repair_smiles_errors(smiles)
+        largest_mol_smiles = get_largest_fragment(repaired_smiles)
+        # Add here potential processing steps for cleaning/sanitizing the SMILES notation 
+        #####
+        #
+        
+        if retain_stereo == 0:
+            clean_smiles_free_stereo = remove_smiles_stereo(largest_mol_smiles)
+            return clean_smiles_free_stereo
+        else:
+            return largest_mol_smiles
+        
+    except:
+        pass
+    
+
+def repair_smiles_errors(smiles):
+    
+    if "[nH]" in smiles:
+        sanitized_smiles = smiles.replace("[nH]","[NH]")
+        return repaired_smiles
+    else:
+        return smiles
+    
+def get_largest_fragment(smiles):   
+    
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        mol_frags = rdmolops.GetMolFrags(mol, asMols = True)
+        largest_mol = max(mol_frags, default=mol, key=lambda m: m.GetNumAtoms())
+        largest_mol_smiles = Chem.MolToSmiles(largest_mol)    
+        return largest_mol_smiles
+    except:
+        return "Error in largest fragment computation"
+    
+def remove_smiles_stereo(smiles):
+    smiles_free_stereo = smiles.replace("@","")
+    if "[CH]" in smiles_free_stereo:
+        smiles_free_stereo = smiles_free_stereo.replace("[CH]","C")
+    return smiles_free_stereo

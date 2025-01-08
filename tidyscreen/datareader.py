@@ -2,7 +2,7 @@ import pandas as pd
 from termcolor import colored
 from tidyscreen import database_interactions as db_ints
 from tidyscreen import ligands_processing
-
+from pandarallel import pandarallel
 
 class InputRawChemspaceFile:
     """
@@ -14,9 +14,11 @@ class InputRawChemspaceFile:
         self.print_parsing_info()
         self.query_user_about_parsing()
         self.parse_data()
+        self.sanitize_smiles_in_df()
+        self.drop_temp_columns()
         self.add_info_to_input_data()
         self.store_df_in_database()
-        print("File succesfully stored within project database")
+        print("File successfully stored within project database")
         
     def print_parsing_info(self):
         # Ask for user input on how to parse the file upon showing 2 lines:
@@ -88,13 +90,32 @@ class InputRawChemspaceFile:
         else:
             header_flag = None
         
+        # Construct a dataframe by parsing the input file
         df = pd.read_csv(self.project.file_to_process, header=header_flag, usecols=[self.parsing_options_dict["smi_field"],self.parsing_options_dict["name_field"]], names=['SMILES','Name'], sep=self.parsing_options_dict["sep"])
         
         self.raw_data_df = df
 
+    def sanitize_smiles_in_df(self):
+        # initialize pandarallel for pandas and perform some SMILES processing
+        pandarallel.initialize(progress_bar=True)
+        
+        raw_df = self.raw_data_df
+        retain_stereo = self.project.retain_stereo
+        raw_df["SMILES_sanitized"] = raw_df["SMILES"].parallel_apply(lambda smiles: ligands_processing.sanitize_smiles(smiles,retain_stereo))
+        
+        self.clean_data_df = raw_df        
+    
+    def drop_temp_columns(self):
+        #clean_df = self.clean_data_df
+        #print(clean_df)
+        clean_df = self.clean_data_df.drop(columns="SMILES") # Drop the column containing the original SMILES notation
+        clean_df = clean_df.rename(columns={"SMILES_sanitized":"SMILES"}) # Rename the sanitized column to the standard SMILES header
+        
+        self.clean_df = clean_df # reassign the clean dataframe to the object attribute
+    
     def add_info_to_input_data(self):
-        df = self.raw_data_df
-        df = ligands_processing.compute_inchi_key_for_whole_df(self.raw_data_df)
+        df = ligands_processing.compute_inchi_key_for_whole_df(self.clean_df)
+        df.dropna(inplace=True) # Drop rows for compounds that may have failed the inchi_key computation
         self.ready_data_df = df
 
     def store_df_in_database(self):
