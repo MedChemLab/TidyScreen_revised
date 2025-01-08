@@ -105,29 +105,58 @@ class MainDbConfigs:
 
     def __init__(self):
         self.main_projects_db = sys.modules['tidyscreen_dbs'].__file__.replace('__init__.py','projects_database.db')
+
+    def list_projects(self):
+        
+        # Check if the database exists
+        if os.path.exists(self.main_projects_db):
+            try: 
+                conn = db_ints.connect_to_database(self.main_projects_db)
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM projects")
+                
+                rows = cursor.fetchall()
+                
+
+                if len(rows) == 0:
+                    print("No projects available in database")
+                    
+                else:
+                    for row in rows:
+                        print(f'Project: \n ', colored(f'{row[0]}','green'),  '\n \t located at', colored(f'{row[1]}','green'), '\n \t Description:', colored(f'{row[2]}','green'))
+
+
+            except Exception as error:
+                print(error)
+
+        else:
+            print("TidyScreen says: \n No project database exists. Create a new project.")
+            return []
         
     def add_chem_filters_from_file(self,filters_file):
+        print("Start adding chemical filters to main database \n")
         conn = sqlite3.connect(self.main_projects_db)
         general_functions.input_chem_filters_to_db(conn,filters_file)
+        print("Finishing adding chemical filters to main database \n")
     
     def list_available_chem_filter(self):
         conn = sqlite3.connect(self.main_projects_db)
         filters_df = general_functions.retrieve_stored_filters(conn)
         
         for index, row in filters_df.iterrows():
-            print(f"{row['Filter_Name']}")
+            print(f"{row['Filter_id']}: {row['Filter_Name']} - {row['SMARTS']}")
         
+    def add_single_reactions_from_file(self,reactions_file):
+        print("Start adding single reactions to main database \n")
+        conn = sqlite3.connect(self.main_projects_db)
+        general_functions.input_single_reactions_to_db(conn,reactions_file)
+        print("Finishing adding single reactions to main database \n")
 
-
-
-
-# This section is to test the module locally
-
-if __name__ == '__main__':
-
-    #proj_mg.list_projects()
-    #project = CreateProject()
-    #proj_mg.delete_all_projects()
-    #proj_mg.delete_single_project("test4")
-    #proj_mg.get_project_path("test4")
-    pass
+    def list_available_single_reactions(self):
+        conn = sqlite3.connect(self.main_projects_db)
+        single_reactions_df = general_functions.retrieve_stored_reactions(conn)
+        
+        print("These are the reactions available in the main database: \n")
+        
+        for index, row in single_reactions_df.iterrows():
+            print(f"{row['Reaction_id']}: {row['Reaction_Name']} - {row['Reaction_SMARTS']}")

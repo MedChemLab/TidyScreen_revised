@@ -31,10 +31,5 @@ $ pip install git+https://github.com/MedChemLab/TidyScreen_revised
 - [Amber](https://ambermd.org/) MD engine: this software package is required to confer TidyScreen the capability to prepare and document molecular dynamics simulations of docked poses.
 
 ---
-#### **Basic usage:**
 
-**STEP 1:** activate the required CONDA environment:
-```bash
-$ conda tidyscreen  # The conda environment should have been previously created
-```
-&nbsp;
+In order to use TidyScreen, users can access the [documentation](https://alfredoq.github.io/tidyscreen_documentation/) describing the project and specific working examples.

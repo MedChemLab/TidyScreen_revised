@@ -1,6 +1,8 @@
 import pandas as pd
 from termcolor import colored
 from tidyscreen import database_interactions as db_ints
+from tidyscreen import ligands_processing
+
 
 class InputRawChemspaceFile:
     """
@@ -12,6 +14,7 @@ class InputRawChemspaceFile:
         self.print_parsing_info()
         self.query_user_about_parsing()
         self.parse_data()
+        self.add_info_to_input_data()
         self.store_df_in_database()
         print("File succesfully stored within project database")
         
@@ -30,7 +33,7 @@ class InputRawChemspaceFile:
             else:
                 for i in range(1):
                     line = next(input_file).strip()
-                    print(colored(f"Sample lines:\n","blue"), colored(f"{line}","green"))
+                    #print(colored(f"Sample lines:\n","blue"), colored(f"{line}","green"))
 
     def query_user_about_parsing(self):
         
@@ -89,13 +92,19 @@ class InputRawChemspaceFile:
         
         self.raw_data_df = df
 
+    def add_info_to_input_data(self):
+        df = self.raw_data_df
+        df = ligands_processing.compute_inchi_key_for_whole_df(self.raw_data_df)
+        self.ready_data_df = df
+
     def store_df_in_database(self):
         db_path = self.project.paths_dict["chemspace"]["processed_data"]
         chemspace_db = f"{db_path}/chemspace.db"
         conn = db_ints.connect_to_database(chemspace_db)
         
         # Store the dataframe in the corresponding database
-        self.raw_data_df.to_sql(con=conn, name=self.project.table_name,if_exists="replace",index=None)
+        #self.raw_data_df.to_sql(con=conn, name=self.project.table_name,if_exists="replace",index=None)
+        self.ready_data_df.to_sql(con=conn, name=self.project.table_name,if_exists="replace",index=None)
 
         
 

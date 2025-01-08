@@ -3,12 +3,15 @@ from meeko import PDBQTWriterLegacy
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers, StereoEnumerationOptions
+from rdkit.Chem.Draw import MolsToGridImage, rdMolDraw2D
 import pandas as pd
 from pandarallel import pandarallel
 import tarfile
 import os
 from tidyscreen import general_functions as gen_func
 import sqlite3
+import json
+import sys
 
 def process_ligand_table_to_pdbqt(conn,table_name,pdbqt_table,chemspace_db):
     sql = f"""SELECT SMILES, Name FROM '{table_name}';"""
@@ -95,9 +98,18 @@ def save_ligand_pdb_file(selected_mol):
     return pdb_file, inchi_key
 
 def compute_inchi_key(smiles):
-    mol = Chem.MolFromSmiles(smiles)
-    inchi_key = Chem.MolToInchiKey(mol)
-    return inchi_key
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        inchi_key = Chem.MolToInchiKey(mol)
+        return inchi_key
+    except:
+        print(f"Error processing Inchi_key for SMILES: \n {smiles} \n")
+        return "InchiKey_error"
+
+def compute_inchi_key_for_whole_df(df):
+    pandarallel.initialize(progress_bar=False)
+    df["inchi_key"] = df["SMILES"].parallel_apply(lambda smiles: compute_inchi_key(smiles))
+    return df
 
 def mol_meeko_processing(pdb_file, inchi_key,atoms_dict):
     mol = Chem.MolFromPDBFile(f'/tmp/{inchi_key}.pdb',removeHs=False)
@@ -127,7 +139,6 @@ def mol_meeko_processing(pdb_file, inchi_key,atoms_dict):
     os.remove(pdb_file)
 
     return blob_pdb_file, blob_pdbqt_file
-
 
 def create_meeko_atoms_dict():
     atoms_dict = [{"smarts": "[#1]", "atype": "H",},
@@ -266,3 +277,256 @@ def explode_stereo_column(df):
         
     else:
         print("No column named 'stereo_info' located in the dataframe to be processed")
+
+def filter_ligands_table_with_smarts(conn,table_name,filters_instances_list, filters_criteria_list, filters_SMARTS_list):
+
+    sql = f"SELECT * FROM {table_name}"
+    ligands_df = pd.read_sql(sql,conn)
+
+    counter = 1
+    for index, smarts_filter in enumerate(filters_SMARTS_list):
+        match_column = f"match_{str(counter)}"
+        instances_column = f"instances_{str(counter)}"
+        # This will assign the filter criteria to apply to each filter, i.e. 'I' (include) or 'E' (exclude)
+        instances_nbr = filters_instances_list[index]
+        selection_criteria = filters_criteria_list[index]
+        pandarallel.initialize(progress_bar=False)
+        ligands_df[[match_column,instances_column]] = ligands_df["SMILES"].parallel_apply(lambda x: pd.Series(match_smarts_filter(x,smarts_filter,instances_nbr,selection_criteria)))
+        counter +=1
+
+    ligands_df_filtered = filter_tagged_molecules_dataframe(ligands_df)
+    
+    return ligands_df_filtered
+        
+def match_smarts_filter(smiles,smarts_filter,instances_nbr,selection_criteria):
+    
+    mol = Chem.MolFromSmiles(smiles)
+    smarts_mol_filter = Chem.MolFromSmarts(smarts_filter)
+    if mol.HasSubstructMatch(smarts_mol_filter):
+        if selection_criteria == 'I':
+            # Get the number of smarts matches
+            smarts_matches = len(mol.GetSubstructMatches(smarts_mol_filter))
+            
+            # Chech is the number of matches is higher than the allowed instances. In that case exclude
+            if smarts_matches > instances_nbr:
+                print(f"Matches: {smarts_matches} - Instance: {instances_nbr}")
+                return 0, int(smarts_matches) # The molecule is excluded because the number of matches is above the limit
+            else:
+                return 1, int(smarts_matches) # First value: matchig flag; second value: nbr of instances of matches
+        else:
+            return 0, 0 # First value: matchig flag; second value: nbr of instances of matches
+    else:
+        if selection_criteria == 'I':
+            return 0, 0 # First value: matchig flag; second value: nbr of instances of matches
+        else:
+            return 1, 0 # First value: matchig flag; second value: nbr of instances of matches
+        
+def filter_tagged_molecules_dataframe(ligands_df):
+    # Get the column names corresponding to matching tags
+    columns_with_tags = [col for col in ligands_df.columns if "match" in col or "instance" in col]
+
+    # Filter sequentially the tags in the dataframe
+    counter = 1
+    for tag_column in columns_with_tags:
+        if counter == 1: # This will hit for the first cleaning iteration
+            ligands_df_filtered = ligands_df[ligands_df[tag_column] == 1]
+            # Drop the column that has been processed
+            ligands_df_filtered = ligands_df_filtered.drop(columns=[tag_column])
+            counter +=1
+        else:
+            ligands_df_filtered = ligands_df_filtered[ligands_df_filtered[tag_column] == 1]
+            # Drop the column that has been processed
+            ligands_df_filtered = ligands_df_filtered.drop(columns=[tag_column])
+            counter +=1
+            
+    return ligands_df_filtered.reset_index(drop=True)
+
+def apply_unimolecular_reaction(molecules_df, table_name, reaction_smarts, scheme_index):
+    
+    # Apply in a parallelized scheme the corresponding reaction
+    pandarallel.initialize(progress_bar=False)
+    product_column = f"product_step_{scheme_index}"
+    
+    # If the reaction is the first one in the schem (i.e. index = 0), the start reactions with the given table name:
+    if scheme_index == 0:
+        molecules_df[f"SMILES_{product_column}"] = molecules_df[f"SMILES_{table_name}"].parallel_apply(lambda smiles:react_molecule_1_component(smiles,reaction_smarts))
+
+    # Id the reaction is a continuation of a serial scheme, then the reactants smiles are stored in index-1 location
+    else:
+        # Check if the table name has been correctly identified as a unimolecules synthetic workflow based on serial reactions (i.e. '->'). If not, inform and exit.add(element)
+        if table_name != "->":
+            print(f"The table named '{table_name}' is not part of a synthetic pipeline involved in a unimolecular reaction step. It should be indicated as '->'.")
+            sys.exit()
+
+        # Apply the subsequent step of the reaction pipeline.
+        molecules_df[f"SMILES_{product_column}"] = molecules_df[f"SMILES_product_step_{scheme_index-1}"].parallel_apply(lambda smiles:react_molecule_1_component(smiles,reaction_smarts))
+
+    return molecules_df
+
+def apply_bimolecular_reaction(conn,molecules_df, tables_names, reaction_smarts, scheme_index):
+
+    # Apply in a parallelized scheme the corresponding reaction
+    pandarallel.initialize(progress_bar=False)
+    product_column = f"product_step_{scheme_index}"
+    
+    # If the reaction is the first one in the schem (i.e. index = 0), the start reactions with the given table name:
+    if scheme_index == 0:
+    
+        reactants_1_df = pd.DataFrame(molecules_df.iloc[:, 0]).dropna()
+        reactants_2_df = pd.DataFrame(molecules_df.iloc[:, 1]).dropna()
+        colname_1 = f'SMILES_{tables_names[0]}'
+        colname_2 = f'SMILES_{tables_names[1]}'
+
+        # This dataframe will store all the products generated throughout the iterations
+        df_all_products = pd.DataFrame()
+
+        # In order to combinatorialy prepare the products, the loop on the dataframe should be performed on the one containing the lowest number of compounds, otherwise it will fail. So here the length of both dataframes are compared, and actioned in accordance
+
+        if len(reactants_1_df) < len(reactants_2_df): # The first dataframe contains less reactants, so loop on it;
+
+            for index, row in reactants_1_df.iterrows():
+                current_smiles_1 = row[colname_1]
+
+                molecules_df[f"SMILES_{product_column}"] = reactants_2_df[colname_2].parallel_apply(lambda smiles_2:react_molecule_2_component(current_smiles_1,smiles_2,reaction_smarts))
+
+                #molecules_df["smiles1"] = reactants_2_df[colname_2].parallel_apply(lambda smiles_2:react_molecule_2_component(current_smiles_1,smiles_2,reaction_smarts))
+
+                # Append the dataframe generated in this iteration to the overall dataframe
+                df_all_products = pd.concat([df_all_products,molecules_df],axis=0)
+
+        else: # The df2 contains less reactants that df1, so loop over if;
+
+            for index, row in reactants_2_df.iterrows():
+                current_smiles_2 = row[colname_2]
+
+                molecules_df[f"SMILES_{product_column}"] = reactants_1_df[colname_1].parallel_apply(lambda smiles_1:react_molecule_2_component(smiles_1,current_smiles_2,reaction_smarts))
+
+                # Append the dataframe generated in this iteration to the overall dataframe
+                df_all_products = pd.concat([df_all_products,molecules_df],axis=0)
+
+    else:
+        # Check if the table name has been correctly identified in the synthetic workflow based on serial reactions (i.e. '->'). If not, inform and exit.add(element)
+        if tables_names[0] != "->":
+            print(f"The table named '{tables_names[0]}' is not part of a synthetic pipeline involved in a next reaction step. It should be indicated as '->'.")
+            sys.exit()
+        
+        reactants_1_df = pd.DataFrame(molecules_df[f"SMILES_product_step_{scheme_index-1}"])
+        reactants_2_df = retrieve_reactants_df(conn,tables_names[1])
+
+        colname_1 = f"SMILES_product_step_{scheme_index-1}"
+        colname_2 = f'SMILES_{tables_names[1]}'
+
+        # This dataframe will store all the products generated throughout the iterations
+        df_all_products = pd.DataFrame()
+
+        if len(reactants_1_df) < len(reactants_2_df): # The first dataframe contains less reactants, so loop on it;
+
+            for index, row in reactants_1_df.iterrows():
+                current_smiles_1 = row.iloc[0]
+                molecules_df[f"SMILES_{product_column}"] = reactants_2_df[colname_2].parallel_apply(lambda smiles_2:react_molecule_2_component(current_smiles_1,smiles_2,reaction_smarts))
+
+                # Append the dataframe generated in this iteration to the overall dataframe
+                df_all_products = pd.concat([df_all_products,molecules_df],axis=0)
+
+        else: # The df2 contains less reactants that df1, so loop over if;
+        
+            for index, row in reactants_2_df.iterrows():
+                current_smiles_2 = row[colname_2]
+
+                molecules_df[f"SMILES_{product_column}"] = reactants_1_df[colname_1].parallel_apply(lambda smiles_1:react_molecule_2_component(smiles_1,current_smiles_2,reaction_smarts))
+
+                # Append the dataframe generated in this iteration to the overall dataframe
+                df_all_products = pd.concat([df_all_products,molecules_df],axis=0)
+
+    return df_all_products # Return the overall df
+
+
+def react_molecule_1_component(smiles,smarts):
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        reaction_mol = AllChem.ReactionFromSmarts(smarts)
+        product_mol = reaction_mol.RunReactants((mol,))[0][0]
+        product_smiles = Chem.MolToSmiles(product_mol)
+        
+        return product_smiles
+    except Exception as error:
+        print(f"The reaction outputed the following error: \n {error} \n for compound: \n {smiles}")
+
+def react_molecule_2_component(smiles_1,smiles_2,smarts):
+    try:
+        mol_1 = Chem.MolFromSmiles(smiles_1)
+        mol_2 = Chem.MolFromSmiles(smiles_2)
+        reaction_mol = AllChem.ReactionFromSmarts(smarts)
+        product_mol = reaction_mol.RunReactants((mol_1,mol_2))[0][0]
+        
+        product_smiles = Chem.MolToSmiles(product_mol)
+
+        #return product_smiles
+        return smiles_1
+    
+    except Exception as error:
+        print(f"The reaction outputed the following error: \n {error} \n for compound: \n {smiles_1}")
+
+def retrieve_initial_reactants(conn,table_names):
+    
+    # Search the tables corresponding to the first reaction
+    for table in table_names[0]:
+        sql = f"SELECT * FROM {table}"
+        molecules_df = pd.read_sql(sql,conn)
+        molecules_df.rename(columns={'SMILES':f'SMILES_{table}'},inplace=True)
+
+    return molecules_df
+
+def retrieve_initial_reactants_updated(conn,table_names):
+    # Search the tables corresponding to the first reaction
+    
+    molecules_df = pd.DataFrame()
+    
+    for table in table_names[0]:
+        sql = f"SELECT SMILES FROM {table}"
+        current_df = pd.read_sql(sql,conn)
+        current_df.rename(columns={'SMILES':f'SMILES_{table}'},inplace=True)
+        molecules_df = pd.concat([molecules_df,current_df],axis=1)
+        
+    return molecules_df
+
+def retrieve_reactants_df(conn,table_name):
+    sql = f"SELECT SMILES FROM {table_name}"
+    molecules_df = pd.read_sql(sql,conn)
+    molecules_df.rename(columns={'SMILES':f'SMILES_{table_name}'},inplace=True)
+
+    return molecules_df
+
+def retrieve_initial_reactants_as_lists(conn,table_names):
+    # This will generate a list lists corresponding to the reactants tables involved in the reaction scheme
+    reactants_lists_of_lists = []
+    for table in table_names[0]: # Will get the table/s associated to the first reaction step
+        sql = f"SELECT SMILES FROM {table}"
+        molecules_df = pd.read_sql(sql,conn)
+        currrent_list = molecules_df["SMILES"].to_list()
+        reactants_lists_of_lists.append(currrent_list)
+
+    return reactants_lists_of_lists
+
+def depict_ligands_table(conn,table_name,output_path,max_mols_ppage):
+    sql=f"SELECT SMILES, inchi_key, Name FROM {table_name};"
+    molecules_df = pd.read_sql_query(sql,conn)
+
+    # Since the molecules might be processed in chunks, it is usefull to create lists with the information in order to process it.add
+    smiles_list, inchi_key_list, names_list = molecules_df["SMILES"].to_list(), molecules_df["inchi_key"].to_list(),molecules_df["Name"].to_list()
+
+    # Generate a naming list
+    lengeds_list = gen_func.combine_strings_in_lists([inchi_key_list,names_list])
+
+
+    # Create the chunks of objects to process according to the max_mols_ppage parameter provided
+    smiles_list_chunks = gen_func.split_list_in_chunks(smiles_list, max_mols_ppage)
+    lengeds_list_chunks = gen_func.split_list_in_chunks(lengeds_list, max_mols_ppage)
+
+    counter = 0 # used to number figures with chunks
+    for index, list_item in enumerate(smiles_list_chunks):
+        df_chunk  = pd.DataFrame({'SMILES':list_item})
+        mols_item = [Chem.MolFromSmiles(smile) for smile in list_item]
+        img = MolsToGridImage(mols=mols_item, legends=lengeds_list_chunks[index], molsPerRow=5,subImgSize=(400,250))
+        img.save(f"{output_path}/{table_name}_{counter}.png")
+        counter+=1

@@ -1,0 +1,17 @@
+,SMILES_Triazol_derivatives_Juampi,SMILES_Sulfinates,"('smiles1', 'smiles2', 'SMILES_product_step_0')"
+0,CCC(CC)C([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1,O=S(O)C1=CC=CC=C1,"('CCC(CC)C([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1', 'O=S(O)C1=CC=CC=C1', 'CCC(CC)C([NH2+]Cc1ccc2c(c1)OCO2)c1cn([C@@H](CSS(=O)(=O)c2ccccc2)C(=O)O)nn1')"
+1,O=C(O)[C@H](CS)N1C=C(C([NH2+]Cc2ccc3c(c2)OCO3)C2CCCC2)N=N1,O=S(O)C1=CC=C(C)C=C1,"('CCC(CC)C([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1', 'O=S(O)C1=CC=C(C)C=C1', 'CCC(CC)C([NH2+]Cc1ccc2c(c1)OCO2)c1cn([C@@H](CSS(=O)(=O)c2ccc(C)cc2)C(=O)O)nn1')"
+2,CCCCC([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1,O=S(O)C1=CC=C(F)C=C1,"('CCC(CC)C([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1', 'O=S(O)C1=CC=C(F)C=C1', 'CCC(CC)C([NH2+]Cc1ccc2c(c1)OCO2)c1cn([C@@H](CSS(=O)(=O)c2ccc(F)cc2)C(=O)O)nn1')"
+3,O=C(O)[C@H](CS)N1C=C(C(C2CCCCC2)[NH+]2CCc3ccccc3C2)N=N1,,
+0,CCC(CC)C([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1,O=S(O)C1=CC=CC=C1,"('O=C(O)[C@H](CS)N1C=C(C([NH2+]Cc2ccc3c(c2)OCO3)C2CCCC2)N=N1', 'O=S(O)C1=CC=CC=C1', 'O=C(O)[C@H](CSS(=O)(=O)c1ccccc1)n1cc(C([NH2+]Cc2ccc3c(c2)OCO3)C2CCCC2)nn1')"
+1,O=C(O)[C@H](CS)N1C=C(C([NH2+]Cc2ccc3c(c2)OCO3)C2CCCC2)N=N1,O=S(O)C1=CC=C(C)C=C1,"('O=C(O)[C@H](CS)N1C=C(C([NH2+]Cc2ccc3c(c2)OCO3)C2CCCC2)N=N1', 'O=S(O)C1=CC=C(C)C=C1', 'Cc1ccc(S(=O)(=O)SC[C@@H](C(=O)O)n2cc(C([NH2+]Cc3ccc4c(c3)OCO4)C3CCCC3)nn2)cc1')"
+2,CCCCC([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1,O=S(O)C1=CC=C(F)C=C1,"('O=C(O)[C@H](CS)N1C=C(C([NH2+]Cc2ccc3c(c2)OCO3)C2CCCC2)N=N1', 'O=S(O)C1=CC=C(F)C=C1', 'O=C(O)[C@H](CSS(=O)(=O)c1ccc(F)cc1)n1cc(C([NH2+]Cc2ccc3c(c2)OCO3)C2CCCC2)nn1')"
+3,O=C(O)[C@H](CS)N1C=C(C(C2CCCCC2)[NH+]2CCc3ccccc3C2)N=N1,,
+0,CCC(CC)C([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1,O=S(O)C1=CC=CC=C1,"('CCCCC([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1', 'O=S(O)C1=CC=CC=C1', 'CCCCC([NH2+]Cc1ccc2c(c1)OCO2)c1cn([C@@H](CSS(=O)(=O)c2ccccc2)C(=O)O)nn1')"
+1,O=C(O)[C@H](CS)N1C=C(C([NH2+]Cc2ccc3c(c2)OCO3)C2CCCC2)N=N1,O=S(O)C1=CC=C(C)C=C1,"('CCCCC([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1', 'O=S(O)C1=CC=C(C)C=C1', 'CCCCC([NH2+]Cc1ccc2c(c1)OCO2)c1cn([C@@H](CSS(=O)(=O)c2ccc(C)cc2)C(=O)O)nn1')"
+2,CCCCC([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1,O=S(O)C1=CC=C(F)C=C1,"('CCCCC([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1', 'O=S(O)C1=CC=C(F)C=C1', 'CCCCC([NH2+]Cc1ccc2c(c1)OCO2)c1cn([C@@H](CSS(=O)(=O)c2ccc(F)cc2)C(=O)O)nn1')"
+3,O=C(O)[C@H](CS)N1C=C(C(C2CCCCC2)[NH+]2CCc3ccccc3C2)N=N1,,
+0,CCC(CC)C([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1,O=S(O)C1=CC=CC=C1,"('O=C(O)[C@H](CS)N1C=C(C(C2CCCCC2)[NH+]2CCc3ccccc3C2)N=N1', 'O=S(O)C1=CC=CC=C1', 'O=C(O)[C@H](CSS(=O)(=O)c1ccccc1)n1cc(C(C2CCCCC2)[NH+]2CCc3ccccc3C2)nn1')"
+1,O=C(O)[C@H](CS)N1C=C(C([NH2+]Cc2ccc3c(c2)OCO3)C2CCCC2)N=N1,O=S(O)C1=CC=C(C)C=C1,"('O=C(O)[C@H](CS)N1C=C(C(C2CCCCC2)[NH+]2CCc3ccccc3C2)N=N1', 'O=S(O)C1=CC=C(C)C=C1', 'Cc1ccc(S(=O)(=O)SC[C@@H](C(=O)O)n2cc(C(C3CCCCC3)[NH+]3CCc4ccccc4C3)nn2)cc1')"
+2,CCCCC([NH2+]Cc1ccc2c(c1)OCO2)C1=CN([C@@H](CS)C(=O)O)N=N1,O=S(O)C1=CC=C(F)C=C1,"('O=C(O)[C@H](CS)N1C=C(C(C2CCCCC2)[NH+]2CCc3ccccc3C2)N=N1', 'O=S(O)C1=CC=C(F)C=C1', 'O=C(O)[C@H](CSS(=O)(=O)c1ccc(F)cc1)n1cc(C(C2CCCCC2)[NH+]2CCc3ccccc3C2)nn1')"
+3,O=C(O)[C@H](CS)N1C=C(C(C2CCCCC2)[NH+]2CCc3ccccc3C2)N=N1,,
