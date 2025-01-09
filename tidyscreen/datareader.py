@@ -93,6 +93,9 @@ class InputRawChemspaceFile:
         # Construct a dataframe by parsing the input file
         df = pd.read_csv(self.project.file_to_process, header=header_flag, usecols=[self.parsing_options_dict["smi_field"],self.parsing_options_dict["name_field"]], names=['SMILES','Name'], sep=self.parsing_options_dict["sep"])
         
+        # Make sure that the 'Name' column is of type string
+        df["Name"] = df["Name"].astype(str)
+
         self.raw_data_df = df
 
     def sanitize_smiles_in_df(self):

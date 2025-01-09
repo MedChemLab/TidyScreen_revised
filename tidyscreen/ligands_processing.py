@@ -296,6 +296,8 @@ def filter_ligands_table_with_smarts(conn,table_name,filters_instances_list, fil
 
     ligands_df_filtered = filter_tagged_molecules_dataframe(ligands_df)
     
+    print(f'A total of {len(ligands_df_filtered)} matched the filter')
+
     return ligands_df_filtered
         
 def match_smarts_filter(smiles,smarts_filter,instances_nbr,selection_criteria):
@@ -309,7 +311,7 @@ def match_smarts_filter(smiles,smarts_filter,instances_nbr,selection_criteria):
             
             # Chech is the number of matches is higher than the allowed instances. In that case exclude
             if smarts_matches > instances_nbr:
-                print(f"Matches: {smarts_matches} - Instance: {instances_nbr}")
+                #print(f"Matches: {smarts_matches} - Instance: {instances_nbr}")
                 return 0, int(smarts_matches) # The molecule is excluded because the number of matches is above the limit
             else:
                 return 1, int(smarts_matches) # First value: matchig flag; second value: nbr of instances of matches
